@@ -1086,7 +1086,8 @@ params = CGI.parse(uri.query || "")
 
   def run_webpacker
     puts 'Going to run webpacker'
-    output = `bin/webpack`
+    puts `ls`
+    output = `./bin/webpack`
     puts "output: #{output}"
 
     if File.exist?('public/packs')
