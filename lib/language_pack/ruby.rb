@@ -1084,11 +1084,11 @@ params = CGI.parse(uri.query || "")
     !yarn_preinstalled?
   end
 
-  def run_webpacker
-    puts 'Going to run webpacker'
-    puts `ls -lah bin`
-    output = `./bin/webpack`
-    puts "output: #{output}"
+  def run_webpacker 
+    puts 'making sure yarn is installed'
+    puts `yarn install`
+    puts 'compiling webpack...'
+    puts `./bin/webpack`
 
     if File.exist?('public/packs')
       puts 'public/packs created!'
