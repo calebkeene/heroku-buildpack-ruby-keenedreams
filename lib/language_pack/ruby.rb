@@ -11,7 +11,6 @@ require "language_pack/helpers/yarn_installer"
 require "language_pack/helpers/layer"
 require "language_pack/helpers/binstub_check"
 require "language_pack/version"
-require "fileutils"
 
 # base Ruby Language Pack. This is for any base ruby app.
 class LanguagePack::Ruby < LanguagePack::Base
