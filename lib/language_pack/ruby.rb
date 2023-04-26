@@ -1086,7 +1086,7 @@ params = CGI.parse(uri.query || "")
 
   def run_webpacker
     puts 'Going to run webpacker'
-    puts `ls`
+    puts `ls -lah bin`
     output = `./bin/webpack`
     puts "output: #{output}"
 
