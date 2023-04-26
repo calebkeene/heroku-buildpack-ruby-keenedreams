@@ -11,6 +11,7 @@ require "language_pack/helpers/yarn_installer"
 require "language_pack/helpers/layer"
 require "language_pack/helpers/binstub_check"
 require "language_pack/version"
+require "fileutils"
 
 # base Ruby Language Pack. This is for any base ruby app.
 class LanguagePack::Ruby < LanguagePack::Base
@@ -100,7 +101,7 @@ WARNING
       post_bundler
       create_database_yml
       install_binaries
-      run_assets_precompile_rake_task
+      run_assets_precompile_or_webpack
     end
     config_detect
     best_practice_warnings
@@ -154,7 +155,7 @@ WARNING
       create_database_yml
       # TODO replace this with multibuildpack stuff? put binaries in their own layer?
       install_binaries
-      run_assets_precompile_rake_task
+      run_assets_precompile_or_webpack
     end
     setup_profiled(ruby_layer_path: ruby_layer.path, gem_layer_path: gem_layer.path)
     setup_export(gem_layer)
@@ -1084,17 +1085,32 @@ params = CGI.parse(uri.query || "")
     !yarn_preinstalled?
   end
 
-  def run_assets_precompile_rake_task
+  def run_assets_precompile_or_webpack
+    if ENV['COMPILE_WITH_WEBPACKER']
+      puts 'COMPILE_WITH_WEBPACKER detected, going to run bin/webpack...'
+      output = `bin/webpack`
+      puts "output: #{output}"
 
-    precompile = rake.task("assets:precompile")
-    return true unless precompile.is_defined?
-
-    topic "Precompiling assets"
-    precompile.invoke(env: rake_env)
-    if precompile.success?
-      puts "Asset precompilation completed (#{"%.2f" % precompile.time}s)"
+      if File.exist?('public/packs')
+        puts 'public/packs created!'
+        puts Dir["public/packs/*"]
+      else
+        puts 'dang! public/packs seems to be missing'
+        mcount "fail.webpack_compile"
+      end
     else
-      precompile_fail(precompile.output)
+      puts 'running regular rails asset precompilation...'
+
+      precompile = rake.task("assets:precompile")
+      return true unless precompile.is_defined?
+
+      topic "Precompiling assets"
+      precompile.invoke(env: rake_env)
+      if precompile.success?
+        puts "Asset precompilation completed (#{"%.2f" % precompile.time}s)"
+      else
+        precompile_fail(precompile.output)
+      end
     end
   end
 
