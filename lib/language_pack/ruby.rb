@@ -100,7 +100,7 @@ WARNING
       post_bundler
       create_database_yml
       install_binaries
-      run_assets_precompile_or_webpack
+      run_webpacker
     end
     config_detect
     best_practice_warnings
@@ -154,7 +154,7 @@ WARNING
       create_database_yml
       # TODO replace this with multibuildpack stuff? put binaries in their own layer?
       install_binaries
-      run_assets_precompile_or_webpack
+      run_webpacker
     end
     setup_profiled(ruby_layer_path: ruby_layer.path, gem_layer_path: gem_layer.path)
     setup_export(gem_layer)
@@ -1084,53 +1084,18 @@ params = CGI.parse(uri.query || "")
     !yarn_preinstalled?
   end
 
-  def run_assets_precompile_or_webpack
-    if ENV['COMPILE_WITH_WEBPACKER']
-      puts 'COMPILE_WITH_WEBPACKER detected, going to run bin/webpack...'
-      output = `bin/webpack`
-      puts "output: #{output}"
+  def run_webpacker
+    puts 'Going to run webpacker'
+    output = `bin/webpack`
+    puts "output: #{output}"
 
-      if File.exist?('public/packs')
-        puts 'public/packs created!'
-        puts Dir["public/packs/*"]
-      else
-        puts 'dang! public/packs seems to be missing'
-        mcount "fail.webpack_compile"
-      end
+    if File.exist?('public/packs')
+      puts 'public/packs created!'
+      puts Dir["public/packs/*"]
     else
-      puts 'running regular rails asset precompilation...'
-
-      precompile = rake.task("assets:precompile")
-      return true unless precompile.is_defined?
-
-      topic "Precompiling assets"
-      precompile.invoke(env: rake_env)
-      if precompile.success?
-        puts "Asset precompilation completed (#{"%.2f" % precompile.time}s)"
-      else
-        precompile_fail(precompile.output)
-      end
+      puts 'dang! public/packs seems to be missing'
+      mcount "fail.webpack_compile"
     end
-  end
-
-  def precompile_fail(output)
-    mcount "fail.assets_precompile"
-    log "assets_precompile", :status => "failure"
-    msg = "Precompiling assets failed.\n"
-    if output.match(/(127\.0\.0\.1)|(org\.postgresql\.util)/)
-      msg << "Attempted to access a nonexistent database:\n"
-      msg << "https://devcenter.heroku.com/articles/pre-provision-database\n"
-    end
-
-    sprockets_version = bundler.gem_version('sprockets')
-    if output.match(/Sprockets::FileNotFound/) && (sprockets_version < Gem::Version.new('4.0.0.beta7') && sprockets_version > Gem::Version.new('4.0.0.beta4'))
-      mcount "fail.assets_precompile.file_not_found_beta"
-      msg << "If you have this file in your project\n"
-      msg << "try upgrading to Sprockets 4.0.0.beta7 or later:\n"
-      msg << "https://github.com/rails/sprockets/pull/547\n"
-    end
-
-    error msg
   end
 
   def bundler_cache
